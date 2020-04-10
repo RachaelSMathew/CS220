@@ -1,0 +1,255 @@
+//generateInput(n: number): number[][]
+function generateInput(n) {
+  let newArray = [];
+  let smallArray = [];
+
+  for(let i=0; i<n; ++i) {
+    let smallArray2 = [];
+    for(let f=0; f<n; ++f){
+      smallArray2.push(f);
+  }
+
+    smallArray = [];
+    let beginning =0; 
+    let end= n;
+
+  for(let j=0; j<n;++j){
+   let num = randomInt(beginning, end);
+    smallArray.push(smallArray2[num]);
+    smallArray2.splice(num, 1);
+    end = smallArray2.length;
+  }
+
+    newArray.push(smallArray);
+  }
+  return newArray;
+}
+
+
+// Returns a random int i where min <= i < max
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+
+function oracle(f) {
+  let numTests = 60; // Change this to some reasonably large value
+  for (let i = 0; i < numTests; ++i) {
+    let n = 9; // Change this to some reasonable size
+    let companies = generateInput(n);
+    let candidates = generateInput(n);
+    let hires = f(companies, candidates);
+    test('Hires length is correct', function() {
+      assert(companies.length === hires.length);
+    });
+    test('Hires have all numbers', function() {
+      assert(allNum());
+    });
+    test('Hires is stable', function() {
+      assert(stableFunc());
+      
+    });
+
+
+    function stableFunc(){ 
+      for(let f=0; f<n; ++f){
+        let firstChoiceForCandidate = candidates[hires[f].candidate][0];
+        if(hires[f].candidate===companies[firstChoiceForCandidate][0]){
+           if(firstChoiceForCandidate!==hires[f].company){
+              return false;
+            
+          }
+        }
+      }
+    
+      return true;
+    }
+
+//checks if randomized array has all the numbers 
+    function allNum() {
+      let smallArray1 = [];
+      let smallArray2 = [];
+        for(let f=0; f<n; ++f){
+          smallArray1.push(f);
+          smallArray2.push(f);
+        }
+      
+      for(let p = 0; p<n; ++p) {
+
+        smallArray1.splice(smallArray1.indexOf(hires[p].company), 1);
+        smallArray2.splice(smallArray2.indexOf(hires[p].candidate), 1);
+      }
+    
+      if(smallArray2.length!==0 || smallArray1.length!==0){
+       return false;
+      }
+     
+      return true;
+    }
+  }
+
+}
+
+//runOracle(f: (companies: number[][], candidates: number[][]) => Run): void
+function runOracle(f) {
+  let n=70;
+  let companies = generateInput(n);
+  let candidates = generateInput(n);
+
+
+
+  let runOra = f(companies, candidates);
+
+  test('Null', () => { assert(true); });
+
+  test('Hires length', function() {
+    if(runOra.out.length > companies.length){
+     assert(false);
+    }
+    if(runOra.out.length > runOra.trace.length + 1 ){
+     assert(false);
+    }
+      assert(true);   
+    });
+
+  let companiesCopy = [];
+  let candidatesCopy = [];
+  for(let g = 0; g<companies.length; ++g){
+    let arr = [];
+    let arr2 = [];
+    for(let h = 0; h<companies.length; ++h){
+      arr.push(companies[g][h]);
+      arr2.push(candidates[g][h]);
+    }
+   
+    companiesCopy.push({array: arr, macthed: -1});
+    candidatesCopy.push({array: arr2, macthed: -1});
+  }
+
+  let helperF = function() {
+
+  for(let i = 0; i< runOra.trace.length; ++i){
+    //checks if all the candidtaes and companies are macthed and if the program needs to end
+    let index = 0;
+    while(candidatesCopy[index].macthed !== -1){
+      ++index;
+    }
+    if(index === candidatesCopy.length){
+      return false;
+    }
+
+    index = 0;
+    while(companiesCopy[index].macthed !== -1){
+      ++index;
+    }
+    if(index === companiesCopy.length){
+      return false;
+    }
+
+   index = 0;
+   while(companiesCopy[index].array.length === 0){
+    ++index;
+   }
+   if(index === companiesCopy.length){
+     return false;
+   }
+
+   index = 0;
+   while(candidatesCopy[index].array.length === 0){
+    ++index;
+   }
+   if(index === candidatesCopy.length){
+     return false;
+   }
+
+    if(runOra.trace[i].fromCo){
+      if(companiesCopy[runOra.trace[i].from].array[0] !== runOra.trace[i].to){
+        return false;
+      }
+      else{
+        if(candidatesCopy[runOra.trace[i].to].macthed===-1){
+          candidatesCopy[runOra.trace[i].to].macthed= runOra.trace[i].from;
+          companiesCopy[runOra.trace[i].from].macthed= runOra.trace[i].to;
+        }
+        else {
+
+          if(candidatesCopy[runOra.trace[i].to].array.indexOf(runOra.trace[i].from) > candidatesCopy[runOra.trace[i].to].array.indexOf(candidatesCopy[runOra.trace[i].to].macthed) ){
+            companiesCopy[runOra.trace[i].from].array.splice(0,1);
+          }
+          else{
+            companiesCopy[candidatesCopy[runOra.trace[i].to].macthed].array.splice(0,1);
+            companiesCopy[candidatesCopy[runOra.trace[i].to].macthed].macthed = -1;
+            candidatesCopy[runOra.trace[i].to].macthed= runOra.trace[i].from;
+            companiesCopy[runOra.trace[i].from].macthed= runOra.trace[i].to;
+           
+          }
+
+          
+        }
+     }
+    }
+    else{
+      if(candidatesCopy[runOra.trace[i].from].array[0] !== runOra.trace[i].to){
+        return false;
+      }
+      else{
+        if(companiesCopy[runOra.trace[i].to].macthed===-1){
+          companiesCopy[runOra.trace[i].to].macthed= runOra.trace[i].from;
+          candidatesCopy[runOra.trace[i].from].macthed= runOra.trace[i].to;
+        }
+        else {
+
+          if(companiesCopy[runOra.trace[i].to].array.indexOf(runOra.trace[i].from) > companiesCopy[runOra.trace[i].to].array.indexOf(companiesCopy[runOra.trace[i].to].macthed) ){
+            candidatesCopy[runOra.trace[i].from].array.splice(0,1);
+          }
+          else{
+            candidatesCopy[companiesCopy[runOra.trace[i].to].macthed].array.splice(0,1);
+            candidatesCopy[companiesCopy[runOra.trace[i].to].macthed].macthed = -1;
+            companiesCopy[runOra.trace[i].to].macthed= runOra.trace[i].from;
+            candidatesCopy[runOra.trace[i].from].macthed= runOra.trace[i].to;
+           
+          }
+
+          
+        }
+    }
+    }
+ 
+  }
+  //checks if each hire output is macthed with their macthed object 
+    for(let i = 0; i< runOra.out.length; ++i){
+
+        if(companiesCopy[runOra.out[i].company].macthed!==-1){
+          if(companiesCopy[runOra.out[i].company].macthed!==runOra.out[i].candidate){
+            return false;
+          }
+          
+        }
+        if(candidatesCopy[runOra.out[i].candidate].macthed!==-1){
+          if(candidatesCopy[runOra.out[i].candidate].macthed!==runOra.out[i].company){
+            return false;
+          }
+        }
+
+    }
+
+
+  return true;
+}
+
+
+  test('Hire Stable', function() {
+    assert(helperF());
+    
+  });
+
+
+}
+
+const oracleLib = require('oracle');
+for(let i=0; i<90; ++i){
+runOracle(oracleLib.traceWheat1);
+}
+runOracle(oracleLib.traceChaff1);
+
+
