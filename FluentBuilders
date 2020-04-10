@@ -1,0 +1,172 @@
+class FluentRestaurants {
+  constructor(jsonData) {
+    this.data = jsonData;
+  }
+//fromState(stateStr: string): FluentRestaurants
+  fromState(stateStr) {
+    return new FluentRestaurants(this.data.filter(function(m) { if(lib220.getProperty(m, 'state').found) {return m.state.localeCompare(stateStr)===0;} return false;}));
+  }
+//ratingLeq(rating: number): FluentRestaurants
+  ratingLeq(rating) {
+    return new FluentRestaurants(this.data.filter(function(m) { if(lib220.getProperty(m, 'stars').found) {return m.stars <= rating;} return false;}));
+  }   
+//ratingGeq(rating: number): FluentRestaurants
+  ratingGeq(rating) {
+    return new FluentRestaurants(this.data.filter(function(m) { if(lib220.getProperty(m, 'stars').found) {return m.stars >= rating; } return false; }));
+  } 
+
+//category(categoryStr: string): FluentRestaurants
+  category(categoryStr) {
+    function categoryHelper(restuarant) {
+      restuarant.reduce( (acc, curr) => (curr===categoryStr)? true :acc, false);
+    }
+    return new FluentRestaurants(this.data.filter(function(m) { if(lib220.getProperty(m, 'categories').found) {return categoryHelper(m.categories)} return false; }));
+  } 
+
+  //hasAmbience(ambienceStr: string): FluentRestaurants
+  hasAmbience(ambienceStr) {
+    return new FluentRestaurants(this.data.filter(function(m) 
+    { 
+    if(lib220.getProperty(m, 'attributes').found) {
+      if(lib220.getProperty(m.attributes, 'Ambience').found) {
+        return lib220.getProperty(m.attributes.Ambience, ambienceStr).value;
+      }
+    }
+    return false;  
+  }
+  )); 
+} 
+
+ //bestPlace(): Restaurant | {}
+ bestPlace() {
+   if(this.data.length === 0){
+     return {};
+   }
+ 
+  function helperFindMax(acc, curr) {
+    if(!lib220.getProperty(acc[0], 'stars').found && lib220.getProperty(curr, 'stars').found) {
+      acc = [];
+      acc.push(curr);
+    }
+    else if(lib220.getProperty(curr, 'stars').found && curr.stars === acc[0].stars) {
+      acc.push(curr);
+    }
+    else if(lib220.getProperty(curr, 'stars').found && curr.stars > acc[0].stars) {
+      acc = [];
+      acc.push(curr);
+    }
+    return acc;
+  }
+
+  let findMaxReview = this.data.slice(1, this.data.length).reduce(helperFindMax, [this.data[0]]);
+
+
+  if(!lib220.getProperty(findMaxReview[0], 'stars').found){
+    return {};
+  }
+
+
+
+  if(findMaxReview.length === 1) {
+    return findMaxReview[0];
+  }
+
+ 
+
+  function helperFindMaxNum(acc, curr) {
+    if(!lib220.getProperty(acc[0], 'review_count').found && lib220.getProperty(curr, 'review_count').found) {
+      acc = [];
+      acc.push(curr);
+    }
+    else if(lib220.getProperty(curr, 'review_count').found && curr.review_count === acc[0].review_count) {
+      acc.push(curr);
+    }
+    else if(lib220.getProperty(curr, 'review_count').found && curr.review_count > acc[0].review_count) {
+      acc = [];
+      acc.push(curr);
+    }
+    return acc;
+  }
+
+
+  let findMaxNumReviews = findMaxReview.slice(1, findMaxReview.length).reduce( helperFindMaxNum, [findMaxReview[0]]);
+
+  if(!lib220.getProperty(findMaxNumReviews[0], 'review_count').found){
+    return findMaxReview[0];
+  }
+
+
+  return findMaxNumReviews[0];
+  }
+ 
+  
+}
+
+
+
+let data3 =
+ lib220.loadJSONFromURL('https://people.cs.umass.edu/~joydeepb/yelp.json');
+
+let testData = [
+ {
+ name: "Beach Ventures Roofing",
+ state: "AZ",
+
+
+ },{
+ name: "Applebee's",
+ state: "NC",
+stars: 6, 
+
+
+ attributes: {
+   Ambience: {
+ hipster: true,
+ trendy: false,
+ upscale: false,
+ casual: false
+ } 
+ }
+ },
+ {
+ name: "China Garden",
+ state: "NC",
+stars: 6, 
+
+  attributes: {
+   Ambience: {
+ hipster: false,
+ trendy: false,
+ upscale: false,
+ casual: false
+ } 
+ }
+ },
+ {
+ name: "Alpaul Automobile Wash",
+ state: "NC",
+stars: 6, 
+ }
+]
+ let tObj = new FluentRestaurants(testData);
+ console.log(tObj.bestPlace());
+
+test('fromState filters correctly', function() {
+ let tObj = new FluentRestaurants(testData);
+ let list = tObj.fromState('NC').data;
+ let list2 = tObj.hasAmbience("hipster");
+ console.log("yippy");
+ console.log(list2);
+ console.log(list.length);
+
+ assert(list.length === 3);
+ assert(list[0].name === "Applebee's");
+ assert(list[1].name === "China Garden");
+ assert(list[2].name === "Alpaul Automobile Wash");
+});
+test('bestPlace tie-breaking', function() {
+ let tObj = new FluentRestaurants(testData);
+ let place = tObj.fromState('NC').bestPlace();
+ console.log(place.name);
+ assert(place.name === 'China Garden');
+});
