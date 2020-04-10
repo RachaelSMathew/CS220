@@ -1,0 +1,232 @@
+// removeBlueAndGreen(img: Image): Image
+function removeBlueAndGreen(img) {
+let newImg = img.copy();
+ for(let i= 0; i<newImg.width; ++i){
+  for(let j = 0; j<newImg.height; ++j){
+    let pixelColors = newImg.getPixel(i, j);
+    newImg.setPixel(i, j, [pixelColors[0], 0.0, 0.0]);
+   }
+  }
+  return newImg;
+}
+
+// makeGrayscale(img: Image): Image
+function makeGrayscale(img) {
+  let newImg = img.copy();
+    for(let i =0; i<newImg.width; ++i){
+      for(let j= 0; j<newImg.height; ++j){
+        let color = newImg.getPixel(i, j);
+        let averageColor = (color[0] + color[1] + color[2])/3;
+
+        newImg.setPixel(i, j, [averageColor, averageColor, averageColor]);
+      }
+    }
+    return newImg;
+  }
+
+//helperMapToRed(pixel:Pixel):Pixel
+//this is the helper function that gets called as 'func' in imageMap
+  function helperMapToRed(pixel) {
+    let result = [];
+    result.push(pixel[0]);
+    result.push(0);
+    result.push(0);
+    return result;
+  }
+
+//helperMapToGrayscale(pixel:Pixel):Pixel
+//this is the helper function that gets called as 'func' in imageMap
+  function helperMapToGrayscale(pixel){
+    let averageColor = (pixel[0] + pixel[1] + pixel[2])/3;
+    let result = [];
+    result.push(averageColor);
+    result.push(averageColor);
+    result.push(averageColor);
+    return result;
+}
+//mapToRed(img:Image):Image
+  function mapToRed(img) {
+    return imageMap(img, helperMapToRed);
+  }
+
+  //mapToGrayscale(img:Image):Image
+  function mapToGrayscale(img) {
+    return imageMap(img, helperMapToGrayscale);
+  }
+
+//imageMap(img: Image, func: (p: Pixel) => Pixel): Image
+  function imageMap(img, func) {
+    let newImg = img.copy();
+    for(let i= 0; i<img.width; ++i){
+    for(let j = 0; j<img.height; ++j){
+      let pixelColor = img.getPixel(i, j);
+      let newPixel = func(pixelColor);
+      newImg.setPixel(i, j, [newPixel[0], newPixel[1], newPixel[2]]);
+    }
+  } 
+    return newImg;
+}
+
+
+//highlightEdges(img:Image):Image
+
+function highlightEdges(img) {
+  let newImg = img.copy();
+  for(let i =0; i<newImg.width; ++i) {
+    for(let j =0; j<newImg.height;  ++j) {
+      
+      let pixelColor = newImg.getPixel(i, j);
+      let m1 = (pixelColor[0] + pixelColor[1] + pixelColor[2])/3;
+ 
+      //EDGE CASE: if the pixel is on the right edge, then the 'm2' value becomes itself(current pixel)
+      let pixelColors2 = (i === img.width-1) ? img.getPixel(i, j): img.getPixel(i + 1, j);
+      
+      let m2 = (pixelColors2[0] + pixelColors2[1] + pixelColors2[2])/3;
+      let newColor = Math.abs(m1 - m2);
+      newImg.setPixel(i, j, [newColor, newColor, newColor]);
+    }
+  }
+  return newImg;
+}
+
+//blur(img:Image):Image
+function blur(img) {
+  let newImg = img.copy();
+  let sumRed = 0;
+  let sumGreen = 0;
+  let sumBlue= 0 ;
+
+//this helper function increments the total sum of the Red, Green, and Blue pixel in order to divide it by the number of its surrounding pixels 
+  function helper(i, j){
+    let colorNum = img.getPixel(i, j);
+    sumRed =sumRed+ colorNum[0];
+    sumBlue =sumBlue +colorNum[2];
+    sumGreen= sumGreen + colorNum[1];
+  }
+
+  for(let i= 0 ; i<img.width; ++i){
+    for(let j=0; j<img.height; ++j){
+      let count = 0;
+      sumRed = 0;
+      sumGreen = 0;
+      sumBlue= 0 ;
+      //if statements tests for edge cases, 'count' keeps track of each available pixel surrounding the current pixel
+      if(i>=1){
+        ++count;
+        helper(i-1, j);
+   
+      }
+      if(i+1<img.width){
+        ++count;
+        helper(i+1, j);
+    
+       }
+      if(j+1<img.height){
+         ++count;
+        helper(i, j+1);
+   
+       }
+       if(j>=1){
+         ++count;
+        helper(i, j-1);
+
+       }
+       if(i>0 && j>0){
+         ++count;
+         helper(i-1, j-1);
+  
+      }
+       if(i+1<img.width && j>0){
+        ++count;
+        helper(i+1, j-1);
+  
+      }
+       if(i+1<img.width && j+1<img.height){
+         ++count;
+         helper(i+1, j+1);
+    
+       }
+       if(i>0 && j+1<img.height){
+        ++count;
+        helper(i-1, j+1);
+  
+       }
+       let currentColor = img.getPixel(i, j);
+ 
+    let redColor = ((sumRed+currentColor[0])/(count+1));
+    let greenColor = ((sumGreen+currentColor[1])/(count+1));
+    let blueColor = ((sumBlue+currentColor[2])/(count+1));
+
+    newImg.setPixel(i, j, [redColor, greenColor, blueColor]);
+      }
+   }
+   
+  return newImg;
+  }
+
+//pixelEq(p1:Pixel, p2:Pixel):Boolean
+  function pixelEq(p1, p2) {
+    let epsilon = .002;
+    for(let i =0; i<3; ++i){
+      if(Math.abs(p1[i]-p2[i]) > epsilon) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  
+  test('remove Blue and Green function is correct', function() {
+    const white = lib220.createImage(10, 10, [1, 1, 1]);
+    const newImage = removeBlueAndGreen(white);
+    const testPixel = newImage.getPixel(5, 5);
+    assert(pixelEq(testPixel, [1, 0, 0]));
+    const testPixel2 = newImage.getPixel(0, 0);
+    assert(pixelEq(testPixel2, [1, 0, 0]));
+    const testPixel3 = white.getPixel(5, 5);
+    assert(pixelEq(testPixel3, [1, 1, 1]));
+    
+    
+  });
+
+  test('make Grayscale is correct', function() {
+    const red = lib220.createImage(10, 10, [.3, .3, .6]);
+    const newImage = makeGrayscale(red);
+    const testPixel = newImage.getPixel(5, 5);
+    assert(pixelEq(testPixel, [.4, .4, .4]));
+    const testPixel2 = newImage.getPixel(0, 0);
+    assert(pixelEq(testPixel2, [.4, .4, .4]));
+    const testPixel3 = red.getPixel(5, 5);
+    assert(pixelEq(testPixel3, [.3, .3, .6]));
+
+  });
+
+  test('map: remove Blue and Green function', function() {
+    const redImage = lib220.createImage(10, 10, [1, 1, 1]);
+    const grayImage = lib220.createImage(10, 10, [.6, .7, .8]);
+    const newImage = mapToRed(redImage);
+    const newImage2 = mapToGrayscale(grayImage);
+    const newPixel = newImage.getPixel(5, 5);
+    const newPixel2 = newImage2.getPixel(5, 5);
+    assert(pixelEq(newPixel, [1, 0, 0]));
+    assert(pixelEq(newPixel2, [.7, .7, .7]));
+  });
+
+  test('highlight edges is correct', function() {
+    const redImage = lib220.createImage(10, 10, [.5, .3, 1]);
+    const newImage = highlightEdges(redImage);
+    const testPixel = newImage.getPixel(5, 5);
+    const testPixel2 = redImage.getPixel(5, 5);
+    assert(pixelEq(testPixel, [0, 0, 0]));
+    assert(pixelEq(testPixel2, [.5, .3, 1]));
+  });
+
+  test('blur function test', function() {
+    const redImage = lib220.createImage(10, 10, [1, 1, 1]);
+    redImage.setPixel(5, 5, [0, 0, 0]);
+    redImage.setPixel(9, 5, [0, 0, 0]);
+    let newImage = blur(redImage);
+    assert(pixelEq(redImage.getPixel(1, 1), [1, 1, 1]));
+    assert(pixelEq(newImage.getPixel(5, 5), [.8888, .8888, .8888]));
+    assert(pixelEq(newImage.getPixel(9, 5), [.8333333, .83333, .8333]));
+  });
